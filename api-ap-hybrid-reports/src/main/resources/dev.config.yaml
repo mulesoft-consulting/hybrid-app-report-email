@@ -1,0 +1,12 @@
+anypoint:
+  username: ""
+  password: ""
+smtp:
+  host: "smtp.gmail.com"
+  port: "587"
+  username: ""
+  password: ""
+  fromAddress: ""
+  toAddress: ""
+scheduler:
+  orgId: ""

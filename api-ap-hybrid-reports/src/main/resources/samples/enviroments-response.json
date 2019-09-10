@@ -1,0 +1,37 @@
+{
+  "data": [
+    {
+      "id": "4edfbcec-6656-40ea-8353-04847f12628a",
+      "name": "Design",
+      "organizationId": "dc046cbb-4d40-4457-b494-bad26244074f",
+      "isProduction": false,
+      "type": "design",
+      "clientId": "8727784979484e30b28316ca1ed4ef9d"
+    },
+    {
+      "id": "c22e6cb0-f67d-4a02-84a2-46bc569b26d8",
+      "name": "Production",
+      "organizationId": "dc046cbb-4d40-4457-b494-bad26244074f",
+      "isProduction": true,
+      "type": "production",
+      "clientId": "108600ae63664e6498253216c2c0887c"
+    },
+    {
+      "id": "596eda2c-f8e2-41c3-827f-23c0e3d86c44",
+      "name": "Sandbox",
+      "organizationId": "dc046cbb-4d40-4457-b494-bad26244074f",
+      "isProduction": false,
+      "type": "sandbox",
+      "clientId": "6cd64d3f5c564cc9984e0f8a2e5c8004"
+    },
+    {
+      "id": "18fc738a-00ef-4ec5-a4ef-40465b5f52a9",
+      "name": "Studio",
+      "organizationId": "dc046cbb-4d40-4457-b494-bad26244074f",
+      "isProduction": false,
+      "type": "sandbox",
+      "clientId": "d33f0ecf0d02432fa470270ab1898e26"
+    }
+  ],
+  "total": 4
+}

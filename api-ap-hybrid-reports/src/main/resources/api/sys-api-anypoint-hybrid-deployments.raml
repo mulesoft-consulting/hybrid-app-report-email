@@ -1,0 +1,42 @@
+#%RAML 1.0
+title: sys-api-anypoint-hybrid-deployments
+version: 1.0
+baseUri: http://localhost:8081/api
+
+/applications:
+  get:
+    description: returns a list of all applications deployed to all environments in a specific Org
+    queryParameters:
+      createdAfterDate: 
+        type: datetime
+        required: false
+      orgId:
+        type: string
+        required: true
+        description: Anypoint Organization ID you want to query against
+    responses:
+      200:
+        body:
+          application/json:
+            example: |
+              [
+                {
+                  "name": "hcsc-deploy",
+                  "applicaitonId": 2622832,
+                  "createdDate": "2018-10-13T15:34:34Z",
+                  "updatedDate": "2018-10-14T18:44:50Z",
+                  "started": false,
+                  "environmentName": ""
+                },
+                {
+                  "name": "hcsc-env-example.jar",
+                  "applicaitonId": 2641216,
+                  "createdDate": "2018-10-20T14:26:14Z",
+                  "updatedDate": "2018-10-20T14:38:01Z",
+                  "started": false,
+                  "environmentName": ""
+                }
+              ]
+              
+
+    

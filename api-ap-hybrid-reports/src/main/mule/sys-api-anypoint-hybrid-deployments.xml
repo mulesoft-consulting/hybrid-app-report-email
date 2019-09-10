@@ -1,0 +1,287 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns:email="http://www.mulesoft.org/schema/mule/email" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd 
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/email http://www.mulesoft.org/schema/mule/email/current/mule-email.xsd">
+    <http:listener-config name="sys-api-anypoint-hybrid-deployments-httpListenerConfig">
+        <http:listener-connection host="0.0.0.0" port="8081" />
+    </http:listener-config>
+    <apikit:config name="sys-api-anypoint-hybrid-deployments-config" api="sys-api-anypoint-hybrid-deployments.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
+    <configuration-properties doc:name="Configuration properties" doc:id="94a72f67-8905-41e9-bdc9-6a4764b40068" file="${mule.env}.config.yaml" />
+	<http:request-config name="HTTP_Anypoint_Request_configuration" doc:name="HTTP Request configuration" doc:id="8be33186-fa11-4e2c-b6da-3dc5689e1726" >
+		<http:request-connection protocol="HTTPS" host="anypoint.mulesoft.com" port="443" />
+	</http:request-config>
+	<http:request-config name="HTTP_local_request_Request_configuration" doc:name="HTTP Request configuration" doc:id="abe49983-d29d-42b1-b38d-3b4e8e51d968" >
+		<http:request-connection host="localhost" port="8081" />
+	</http:request-config>
+	<email:smtp-config name="Email_SMTP" doc:name="Email SMTP" doc:id="23888754-f0da-4951-9f1c-98792a16e3c8" >
+		<email:smtp-connection host="${smtp.host}" user="${smtp.username}" port="${smtp.port}" password="${smtp.password}">
+			<email:properties >
+				<email:property key="mail.smtp.starttls.enable" value="true" />
+			</email:properties>
+		</email:smtp-connection>
+	</email:smtp-config>
+	<global-property doc:name="Global Property" doc:id="077d12b6-cd9d-400c-9c03-dbbecd978a0d" name="mule.env" value="local" />
+	<flow name="sys-api-anypoint-hybrid-deployments-main">
+        <http:listener config-ref="sys-api-anypoint-hybrid-deployments-httpListenerConfig" path="/api/*">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body>#[payload]</http:body>
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:error-response>
+        </http:listener>
+        <apikit:router config-ref="sys-api-anypoint-hybrid-deployments-config" />
+        <error-handler>
+            <on-error-propagate type="APIKIT:BAD_REQUEST">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Bad request"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">400</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_FOUND">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Resource not found"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">404</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:METHOD_NOT_ALLOWED">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Method not allowed"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">405</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_ACCEPTABLE">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Not acceptable"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">406</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:UNSUPPORTED_MEDIA_TYPE">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Unsupported media type"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">415</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_IMPLEMENTED">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Not Implemented"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">501</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+    <flow name="sys-api-anypoint-hybrid-deployments-console">
+        <http:listener config-ref="sys-api-anypoint-hybrid-deployments-httpListenerConfig" path="/console/*">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body>#[payload]</http:body>
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:error-response>
+        </http:listener>
+        <apikit:console config-ref="sys-api-anypoint-hybrid-deployments-config" />
+        <error-handler>
+            <on-error-propagate type="APIKIT:NOT_FOUND">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Resource not found"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">404</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+    <flow name="get:\applications:sys-api-anypoint-hybrid-deployments-config">
+		<set-variable value="#[attributes.queryParams.orgId]" doc:name="Set Variable orgId" doc:id="f4b2b11d-5150-4b53-bc0f-f84e2177abc8" variableName="orgId"/>
+		<choice doc:name="Choice" doc:id="20914855-226f-4de3-88f1-91482ad0fcab" >
+			<when expression="#[attributes.queryParams.createdAfterDate != null]">
+				<set-variable value="#[attributes.queryParams.createdAfterDate]" doc:name="Set Variable afterDate" doc:id="e977a276-089a-4a79-84c5-1a324b3a2693" variableName="afterDate"/>
+			</when>
+			<otherwise >
+				<set-variable value="#[now() - |P2Y|]" doc:name="Set Variable afterDate" doc:id="96be895a-043f-45b7-8a61-d5127f2cb53a" variableName="afterDate"/>
+			</otherwise>
+		</choice>
+		<flow-ref doc:name="Flow Reference" doc:id="3cc501b2-6ec9-49d8-b39a-fd468c00c6e7" name="authFlow" target="accessToken" targetValue="#[payload.access_token]"/>
+		<http:request method="GET" doc:name="Request GET Environments" doc:id="abf0c1ae-e900-4c01-8ac7-e682428027ca" config-ref="HTTP_Anypoint_Request_configuration" path="/accounts/api/organizations/{orgId}/environments">
+			<http:headers ><![CDATA[#[output application/java
+---
+{
+	"Authorization" : "bearer " ++ vars.accessToken,
+	"Content-Type" : "application/json"
+}]]]></http:headers>
+			<http:uri-params ><![CDATA[#[output application/java
+---
+{
+	"orgId" : attributes.queryParams.'orgId'
+}]]]></http:uri-params>
+		</http:request>
+		<logger level="INFO" doc:name="Logger" doc:id="0ca087d5-45c0-4540-9c22-20f5f09f46e2" message="#[payload]"/>
+		<set-variable value="#[[]]" doc:name="Set Variable" doc:id="d198077f-e12d-44cb-bdb4-a45000fab14a" variableName="finalResult"/>
+		<foreach doc:name="For Each" doc:id="fb10d20f-bb02-459c-a761-b989c185461c" collection="#[payload.data]">
+			<set-variable value="#[payload.name]" doc:name="Set Variable environmentName" doc:id="48095adf-58aa-40f6-a599-0b2d7f4628a2" variableName="environmentName"/>
+			<http:request method="GET" doc:name="Request GET Applications" doc:id="ae4ec267-c9b4-437e-9469-4b3d85bd33d7" config-ref="HTTP_Anypoint_Request_configuration" path="/hybrid/api/v1/applications">
+				<http:headers ><![CDATA[#[output application/java
+---
+{
+	"X-ANYPNT-ENV-ID" : payload.id,
+	"Authorization" : "bearer " ++ vars.accessToken,
+	"X-ANYPNT-ORG-ID" : vars.orgId
+}]]]></http:headers>
+			</http:request>
+			<ee:transform doc:name="Transform Message" doc:id="6bc28f66-0c70-496d-9218-e0c154d37a25" >
+				<ee:message >
+				</ee:message>
+				<ee:variables >
+					<ee:set-variable variableName="finalResult" ><![CDATA[%dw 2.0
+output application/json
+var f = payload.data map ((item, index) -> {
+    environmentName: vars.environmentName,
+    name: item.name,
+    applicationId: item.id,
+    createdDated: (item.timeCreated/1000) as DateTime,
+    updatedDate: (item.timeUpdated/1000) as DateTime,
+    started: item.started
+}) filter ((item, index) -> item.createdDated > vars.afterDate)
+---
+vars.finalResult ++ f]]></ee:set-variable>
+				</ee:variables>
+			</ee:transform>
+			<logger level="INFO" doc:name="Logger" doc:id="6a634ac5-ad46-4939-9dd9-e826e0691af9" message="#[payload]"/>
+		</foreach>
+		<ee:transform doc:name="Transform Message" doc:id="fccaed26-8370-4946-8255-0717ed32e925" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+vars.finalResult]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+    </flow>
+	<flow name="authFlow" doc:id="b1a3b4b5-5370-49dc-9b35-4d7163c1c7b2" >
+		<ee:transform doc:name="Transform Message" doc:id="6eb47a57-e353-4023-8e04-54b422e6a4dc" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	username: p("anypoint.username"),
+	password: p("anypoint.password") 
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<http:request method="POST" doc:name="Request Bearer" doc:id="661755c4-b956-461b-9416-784eb4968f16" config-ref="HTTP_Anypoint_Request_configuration" path="/accounts/login">
+			<http:headers ><![CDATA[#[output application/java
+---
+{
+	"Content-Type" : "application/json"
+}]]]></http:headers>
+		</http:request>
+		<logger level="INFO" doc:name="Logger" doc:id="c8e2714b-c376-41d3-bdb9-7dc68f28ef3f" message="#[payload]"/>
+	</flow>
+	<flow name="scheduledReport-Flow" doc:id="0bbdea89-f862-48f5-80e6-ec7c5f6e5420" initialState="started">
+		<scheduler doc:name="Scheduler" doc:id="a79d9d8c-0097-46c1-91e2-108498937022" >
+			<scheduling-strategy >
+				<fixed-frequency frequency="90000" startDelay="10000"/>
+			</scheduling-strategy>
+		</scheduler>
+		<http:request method="GET" doc:name="Request local API" doc:id="aeb4fb30-c94b-4a6b-9a9a-43bbb0de62b5" config-ref="HTTP_local_request_Request_configuration" path="/api/applications">
+			<http:query-params ><![CDATA[#[output application/java
+---
+{
+	"orgId" : p("scheduler.orgId"),
+	"createdAfterDate" : ((now() as DateTime - |P2Y|) >> "UTC") as String {format: "yyyy-MM-dd'T'HH:mm:ss.SSS" } ++"Z"
+}]]]></http:query-params>
+		</http:request>
+		<choice doc:name="Choice" doc:id="a0280e8f-d8e1-4392-89f2-2978668ac4a1" >
+			<when expression="#[sizeOf(payload) &gt; 0]">
+				<ee:transform doc:name="Transform Message : create HTML" doc:id="93c348ab-6822-4f02-8207-6d1f54dcbf03">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/java
+---
+"<table> <tr>" ++ 
+    (payload[0] pluck ((value, key, index) -> (
+        "<th>" ++ key++ "</th>"
+    )) joinBy(" ") )
+ ++ "</tr>" ++ 
+(payload map ((item, index) -> (
+    "<tr>" ++ 
+            (item pluck ((value, key, index) -> (
+                "<td>" ++ value ++ "</td>" 
+            ) ) joinBy(""))
+    ++ "</tr>" 
+)) joinBy(" ")) ++ "</table>"]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<ee:transform doc:name="Transform Message" doc:id="f58a134c-94e4-4833-bcb9-67ca8c3ee55e">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output text/plain
+---
+payload
+]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<logger level="INFO" doc:name="Logger" doc:id="612bcaea-a777-4993-99f2-5218f6c857cd" message="#[payload]" />
+				<email:send doc:name="Send" doc:id="0beb0a54-cafe-44bc-aa64-8c8ccdb27aff" config-ref="Email_SMTP" fromAddress='#[p("smtp.fromAddress")]' subject="Hybrid Deployment Report">
+					<email:to-addresses >
+						<email:to-address value='#[p("smtp.toAddress")]' />
+					</email:to-addresses>
+					<email:body contentType="text/html" encoding="UTF-8" />
+				</email:send>
+			</when>
+			<otherwise >
+				<logger level="INFO" doc:name="Logger" doc:id="966e677b-3d7f-4dc7-86ee-4689a4a3eb62" message="No Applications have been created in Runtime Manager after the provided date"/>
+			</otherwise>
+		</choice>
+	</flow>
+</mule>
